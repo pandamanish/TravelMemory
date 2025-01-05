@@ -1,0 +1,14 @@
+global:
+  scrape_interval: 15s # How often Prometheus scrapes targets
+
+scrape_configs:
+  # Backend Server Configuration
+  - job_name: 'node_backend'
+    static_configs:
+      - targets: ['172.17.0.5:3001'] # Your backend metrics endpoint
+
+  # MongoDB Exporter Configuration
+  - job_name: 'mongodb_exporter'
+    static_configs:
+      - targets: ['172.17.0.4:9216'] # Your MongoDB exporter metrics endpoint
+

@@ -9,10 +9,19 @@
   "author": "Prashant Dey",
   "license": "ISC",
   "dependencies": {
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.55.0",
+    "@opentelemetry/core": "^1.30.0",
+    "@opentelemetry/exporter-jaeger": "^1.30.0",
+    "@opentelemetry/instrumentation-express": "^0.47.0",
+    "@opentelemetry/instrumentation-http": "^0.57.0",
+    "@opentelemetry/sdk-node": "^0.57.0",
+    "@opentelemetry/sdk-trace-node": "^1.30.0",
     "cors": "^2.8.5",
     "dotenv": "^16.1.4",
-    "express": "^4.18.2",
+    "express": "^4.21.2",
     "mongoose": "^7.2.4",
-    "nodemon": "^2.0.22"
+    "nodemon": "^3.1.9",
+    "prom-client": "^15.1.3"
   }
 }
