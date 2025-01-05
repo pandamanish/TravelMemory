@@ -203,20 +203,117 @@ Add Jaeger as a data source in Grafana.
 
 6. Alerting and Anomaly Detection
 
+Set Up Alerts in Grafana:
+
+Go to the Grafana UI and navigate to Alerting > Notification Channels.
+
+Click on New Notification Channel and configure the desired channel (e.g., Slack, email, or webhook).
+
+For example, to configure Slack:
+
+Set the type to Slack.
+
+Add the Webhook URL from your Slack workspace.
+
+Save and test the notification.
+
+Create an Alert Rule in Grafana:
+
+Navigate to the dashboard panel for which you want to set up an alert.
+
+Open the panel settings and select Alert > Create Alert Rule.
+
+Define the alert conditions based on specific metrics. Example:
+
+Condition: When avg() of query (A, 5m, now) is above 0.5.
+
+Evaluation: Check every 1m for 5m.
+
+Notification: Select the configured notification channel.
+
+Save the alert rule.
+
 Set Up Alerts in Prometheus:
 
-Defined alert rules for critical metrics.
+Update the Prometheus alert.rules.yml file:
+
+groups:
+  - name: example-alerts
+    rules:
+      - alert: HighRequestLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High request latency detected"
+          description: "Request latency is above 1s for the past 5 minutes."
+
+6. Alerting and Anomaly Detection
+Set Up Alerts in Grafana:
+Go to the Grafana UI and navigate to Alerting > Notification Channels.
+Click on New Notification Channel and configure the desired channel (slack).
+For example, to configure Slack:
+Set the type to Slack.
+Add the Webhook URL from your Slack workspace.
+Save and test the notification.
+Create an Alert Rule in Grafana:
+Navigate to the dashboard panel for which you want to set up an alert.
+Open the panel settings and select Alert > Create Alert Rule.
+Define the alert conditions based on specific metrics.
+Condition: When avg() of query (A, 5m, now) is above 0.5.
+Evaluation: Check every 1m for 5m.
+Notification: Select the configured notification channel.
+Save the alert rule.
+Set Up Alerts in Prometheus:
+Update the Prometheus alert.rules.yml file:
 ```
+groups:
+  - name: example-alerts
+    rules:
+      - alert: HighRequestLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High request latency detected"
+          description: "Request latency is above 1s for the past 5 minutes."
+```
+Restart Prometheus to apply the new rules:
+```
+docker restart prometheus
+```
+Explore Anomaly Detection in Grafana:
+Install the Grafana Machine Learning plugin:
+```
+grafana-cli plugins install grafana-machine-learning
+```
+Restart the Grafana server:
+```
+docker restart grafana
+```
+Navigate to the ML section in Grafana and configure a new prediction model for key metrics (e.g., CPU usage, request rates).
+Set up anomaly detection thresholds and integrate them into dashboards.
+Test Alerts and Anomaly Detection:
+Simulate conditions to trigger alerts:
+Inducing high latency in the backend.
+Temporarily stopping the MongoDB service.
+Verify alerts are sent to the configured channels.
+Monitor anomaly detection panels for unusual patterns or predictions.
+Set Up Alerts in Prometheus:
+Define alert rules for critical metrics.
 High API latency.
+```
 alert: HighLatency
-expr: "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1"
+expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1
 for: 5m
 labels:
   severity: critical
 annotations:
   summary: "High API latency detected"
 ```
-Added Notification Channels:
+Add Notification Channels:
 Configure Slack, email, or webhook integrations in Grafana.
 Explore Anomaly Detection:
 Use machine learning plugins in Grafana for predictions.
