@@ -1,78 +1,222 @@
 # Advanced Monitoring Solution for MERN Application using Grafana and Prometheus
+
 This project involves setting up a robust monitoring solution for a MERN application. The solution includes performance metrics, log aggregation, distributed tracing, alerting, and advanced visualization using Prometheus, Grafana, and other related tools.
 
-# Setps:
+# Introduction
+
+The goal of this project is to create a detailed monitoring setup for a MERN application. This includes tracking backend, frontend, and database performance, log aggregation, distributed tracing, and anomaly detection. The solution uses tools like Prometheus, Grafana, Loki, and Jaeger to achieve full-stack observability and ensure application reliability.
+
+# Prerequisites
+
+Before starting, ensure the following tools are installed:
+Node.js: Installed globally for backend and frontend development.
+MongoDB: A local or cloud-based MongoDB instance (e.g., MongoDB Atlas).
+Docker: To deploy Prometheus, Grafana, Loki, and other services.
+Prometheus: For collecting metrics from the application and database.
+Grafana: For advanced visualization and monitoring.
+Loki and Promtail: For log aggregation and log exploration.
+Jaeger: For distributed tracing.
+
+# Steps:
 1. MERN Application Setup
-  Deploy the Travel Memory MERN application locally
-  Clone the repository and set up the application.
-  Ensure Node.js, MongoDB, and other dependencies are installed.
-  Start the application and verify that the frontend, backend, and database are functional.
+Deploy the Travel Memory Application:
+Clone the repository:
+```
+git clone "https://github.com/UnpredictablePrashant/TravelMemory.git"
+cd TravelMemory
+```
+Install dependencies for the backend:
+```
+cd backend
+npm install
+```
+Install dependencies for the frontend:
+```
+cd ../frontend
+npm install
+```
+Set up environment variables:
+
+Backend: Create a .env file in the backend folder and configure MongoDB URI and other settings.
+
+Frontend: Update the API endpoint to match the backend's URL.
+
+Start the application:
+
+# Start the backend
+```
+cd backend
+node index.js
+```
+
+# Start the frontend
+```
+cd ../frontend
+npm start
+```
+Verified the application:
+Frontend: Visit http://localhost:3000 in browser.
+Database: Verify MongoDB data using a MongoDB client or GUI tool.
+![ Alt text](images/be.png)
+![ Alt text](images/fe.png)
+
 
 2. Integrate Prometheus
 Backend Metrics
-Install the Prometheus Node.js client library:
+Install Prometheus Node.js Client Library:
 ```
 npm install prom-client
 ```
-Expose custom metrics (e.g., API response times, request counts, error rates) in the backend code.
-Add an endpoint /metrics to serve Prometheus metrics.
+Modified Backend to Expose Metrics:
+
+Add a /metrics endpoint in the backend/index.js:
+```
+const client = require('prom-client');
+const collectDefaultMetrics = client.collectDefaultMetrics;
+collectDefaultMetrics();
+
+app.get('/metrics', async (req, res) => {
+  res.set('Content-Type', client.register.contentType);
+  res.end(await client.register.metrics());
+});
+```
+Metrics Exposed:
+API response times.
+HTTP request counts.
+API error rates.
+
+Verified Metrics:
+By Accessing http://localhost:3001/metrics.
 
 MongoDB Monitoring
-Install MongoDB Exporter to collect database metrics.
+Install MongoDB Exporter:
 ```
-docker run -d -p 9216:9216 --name mongodb-exporter bitnami/mongodb-exporter:latest
+docker pull bitnami/mongodb-exporter:latest
 ```
-Configured the MongoDB Exporter to connect to your database.
-Prometheus Configuration
+Run MongoDB Exporter:
+```
+docker run -d \
+    -p 9216:9216 \
+    --name mongodb-exporter \
+    --network="host" \
+    -e MONGODB_URI="mongodb+srv://<username>:<password>@<cluster-url>/dbname" \
+    bitnami/mongodb-exporter:latest
+```
+Verify Metrics:
+By Accessing http://localhost:9216/metrics.
 
-Update the Prometheus configuration file (prometheus.yml) to scrape metrics from the Node.js backend and MongoDB Exporter:
+Prometheus Configuration
+Update prometheus.yml:
 ```
 scrape_configs:
   - job_name: 'node-backend'
     static_configs:
-      - targets: ['localhost:3001']
+      - targets: ['172.17.0.1:3001']
 
   - job_name: 'mongodb'
     static_configs:
-      - targets: ['localhost:9216']
+      - targets: ['172.17.0.2:9216']
 ```
-Restart the Prometheus service to apply the changes.
-
+Restart Prometheus:
+```
+docker restart prometheus
+```
+![ Alt text](images/both.png)
 3. Enhance Grafana Dashboards
-Install Grafana and connect it to Prometheus as a data source.
-Create advanced dashboards with the following panels:
-API response times, request counts, and error rates.
-MongoDB health and performance metrics (e.g., query execution times, active connections).
-Optional: Include frontend performance metrics if available.
+
+Run Grafana in Docker:
+```
+docker run -d -p 3000:3000 grafana/grafana
+```
+Add Prometheus as a Data Source:
+Navigate to Configuration > Data Sources > Add Data Source.
+Select Prometheus.
+Set the URL to http://172.17.0.3:9090.
+Save and test the data source.
+
+Create Dashboards:
+Add panels for:
+Backend performance metrics (response times, error rates).
+MongoDB metrics (connections, query execution times).
+Save the dashboard.
+![ Alt text](images/grf.png)
+![ Alt text](images/next.png)
 
 4. Log Aggregation
-Install Loki for log aggregation:
+
+Install Loki for Log Aggregation:
 ```
 docker run -d -p 3100:3100 --name loki grafana/loki:latest
 ```
-Configure Promtail to ship logs to Loki:
+Run Promtail for Log Shipping:
 ```
-docker run -d -v /var/log:/var/log -p 9080:9080 --name promtail grafana/promtail:latest
+docker pull grafana/promtail:latest
 ```
-Integrate Loki with Grafana and create log exploration dashboards.
+Configure Promtail:
+
+Create promtail-config.yml:
+```
+server:
+  http_listen_port: 9080
+clients:
+  - url: http://172.17.0.5:3100/loki/api/v1/push
+positions:
+  filename: /tmp/positions.yaml
+scrape_configs:
+  - job_name: system
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: varlogs
+          __path__: /var/log/*.log
+```
+Run Promtail:
+```
+docker run -d -v /path/to/promtail-config.yml:/etc/promtail-config.yml grafana/promtail:latest
+```
+Visualize Logs in Grafana:
+Add Loki as a data source.
+Create a dashboard with log panels.
 
 5. Implement Distributed Tracing
-Install Jaeger for distributed tracing:
+
+Run Jaeger:
 ```
-docker run -d --name jaeger -e COLLECTOR_ZIPKIN_HTTP_PORT=9411 -p 5775:5775/udp -p 6831:6831/udp -p 6832:6832/udp -p 5778:5778 -p 16686:16686 -p 14268:14268 -p 14250:14250 -p 9411:9411 jaegertracing/all-in-one:latest
+docker run -d --name jaeger -p 16686:16686 jaegertracing/all-in-one:latest
 ```
-Integrate Jaeger into the backend for tracing.
-Use the @opentelemetry Node.js SDK to trace API requests.
-Connect Jaeger to Grafana as a data source for tracing visualization.
+Integrate Tracing with Backend:
+```
+npm install @opentelemetry/api @opentelemetry/sdk-node @opentelemetry/exporter-jaeger
+```
+Add Tracing Configuration to index.js:
+
+Include the OpenTelemetry setup.
+
+Verify Tracing:
+
+Access Jaeger UI: http://localhost:16686.
+
+Connect Jaeger to Grafana:
+
+Add Jaeger as a data source in Grafana.
 
 6. Alerting and Anomaly Detection
-Set up alerting rules in Prometheus:
+
+Set Up Alerts in Prometheus:
+
+Defined alert rules for critical metrics.
 ```
-alerting:
-  alertmanagers:
-    - static_configs:
-        - targets:
-          - localhost:9093
+High API latency.
+alert: HighLatency
+expr: "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1"
+for: 5m
+labels:
+  severity: critical
+annotations:
+  summary: "High API latency detected"
 ```
-Configure alert thresholds for critical metrics (e.g., high API error rates, slow response times).
-Explore Grafana’s anomaly detection features to detect unusual patterns in metrics and logs.
+Added Notification Channels:
+Configure Slack, email, or webhook integrations in Grafana.
+Explore Anomaly Detection:
+Use machine learning plugins in Grafana for predictions.
